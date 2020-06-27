@@ -1,5 +1,6 @@
-let mix = require('laravel-mix');
-
+const path = require('path');
+const mix = require('laravel-mix');
+const theme = path.basename(__dirname);
 /*
  |--------------------------------------------------------------------------
  | Mix Asset Management
@@ -11,20 +12,49 @@ let mix = require('laravel-mix');
  |
  */
 
-mix.js('assets/js/app.js', './javascript')
-   .sass('assets/sass/app.scss', './css')
-   .sass('assets/sass/editor.scss', './css');
+const jsxFiles = {
+  'src/js/carousel.js': 'dist/js'
+};
 
-mix.browserSync({
-  proxy: 'example.com',
-  files: [
-    {
-      match: ['./**/*.ss'],
-      fn: function (event, file) {
-        this.reload();
-      }
+const jsFiles = {
+  'src/js/app.js': 'dist/js'
+};
+
+const scssFiles = {
+  'src/sass/app.scss': 'dist/css',
+  'src/sass/editor.scss': 'css',
+};
+
+const defaultOptions = {};
+
+const webpackOptions = {
+  resolve: {
+    alias: {
+      src: path.resolve(__dirname, 'src'),
+      images: path.resolve(__dirname, 'images'),
     },
-    './css/*.css',
-    './javascript/*.js'
-  ]
-});
+    modules: [path.resolve(__dirname, 'src'), path.resolve(__dirname, 'js'), 'node_modules']
+  },
+};
+
+Object.entries(jsxFiles)
+  .forEach(([src, dest]) => mix.react(src, dest, defaultOptions));
+
+Object.entries(jsFiles)
+  .forEach(([src, dest]) => mix.js(src, dest, defaultOptions));
+
+Object.entries(scssFiles)
+  .forEach(([src, dest]) => mix.sass(src, dest, defaultOptions));
+
+
+if (mix.inProduction()) {
+  mix.setResourceRoot(`/_resources/themes/${theme}/dist`);
+} else if (mix.config.hmr) {
+  mix.setResourceRoot(`http://${mix.config.hmrOptions.host}:${mix.config.hmrOptions.port}/`);
+}
+
+mix
+  .webpackConfig(webpackOptions)
+  .setPublicPath('dist')
+  .sourceMaps(true, 'source-map')
+  .extract();
